@@ -27,7 +27,7 @@ mongoose.connect(mongoURI).then(()=>{
 
 
 app.get("/",(req,res)=>{
-    res.status(200).json({message:"the backend is reponsive"})
+    res.status(200).json({message:"the backend is working"})
 })
 
 app.use("/api/auth",router);

@@ -3,7 +3,7 @@ import Note from "../models/noteModel.js"
 import express from "express";
 import verifyToken from "../middleware/middleware.js";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+
 dotenv.config();
 
 const routers = express.Router();
