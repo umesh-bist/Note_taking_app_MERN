@@ -4,7 +4,7 @@ A full-stack note-taking web application built using the MERN stack, with authen
 
 ---
 
-##  Tech Stack
+#  Tech Stack
 
 - Frontend: React, Redux Toolkit, Redux-Saga, Tailwind CSS
 - Backend: Node.js, Express.js
@@ -13,18 +13,18 @@ A full-stack note-taking web application built using the MERN stack, with authen
 
 ---
 
-## Features
+# Features
 
-- ✅ User Signup & Login (JWT-based authentication)
-- ✅ Add Note
-- ✅ Edit/Update Note
-- ✅ Delete Note
-- ✅ Fully connected frontend & backend
-- ✅ State management with Redux-Saga
+-  User Signup & Login (JWT-based authentication)
+-  Add Note
+-  Edit/Update Note
+-  Delete Note
+-  Fully connected frontend & backend
+- State management with Redux-Saga
 
 ---
 
-## Folder Structure
+# Folder Structure
 
 NoteTaking/
 ├── frontend/ # React app with Redux-Saga
