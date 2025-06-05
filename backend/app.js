@@ -2,8 +2,8 @@ import express from "express";
 import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import router from "./Routes/authRoute.js";
-import routers from "./Routes/noteRoute.js";
+import router from "./routes/authRoute.js";
+import routers from "./routes/noteRoute.js";
 
 
 
