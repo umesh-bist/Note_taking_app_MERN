@@ -1,36 +1,46 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+const navLinks = [
+  { path: '/notes', label: 'My Notes' },
+  { path: '/login', label: 'Login' },
+  { path: '/signup', label: 'Sign Up' },
+];
+
 const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const renderLinks = (className = '') =>
+    navLinks.map(({ path, label }) => (
+      <Link key={path} to={path} className={className} onClick={() => setMenuOpen(false)}>
+        {label}
+      </Link>
+    ));
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-r from-sky-100 to-blue-200">
       <header className="bg-indigo-600 text-white sticky top-0 z-50 shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="flex justify-between items-center px-4 py-4 max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold">
             <Link to="/">📝 NoteApp</Link>
           </h1>
 
           <button
-            className="md:hidden focus:outline-none"
-            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden focus:outline-none text-xl"
+            onClick={() => setMenuOpen(prev => !prev)}
+            aria-label="Toggle Menu"
           >
             ☰
           </button>
 
           <nav className="hidden md:flex space-x-6">
-            <Link to="/notes" className="hover:underline">My Notes</Link>
-            <Link to="/login" className="hover:underline">Login</Link>
-            <Link to="/signup" className="hover:underline">Sign Up</Link>
+            {renderLinks('hover:underline')}
           </nav>
         </div>
 
         {menuOpen && (
           <div className="md:hidden px-4 pb-4 space-y-2 bg-indigo-600 text-sm">
-            <Link to="/notes" onClick={() => setMenuOpen(false)} className="block">My Notes</Link>
-            <Link to="/login" onClick={() => setMenuOpen(false)} className="block">Login</Link>
-            <Link to="/signup" onClick={() => setMenuOpen(false)} className="block">Sign Up</Link>
+            {renderLinks('block')}
           </div>
         )}
       </header>
@@ -60,8 +70,8 @@ const Home = () => {
         </div>
       </main>
 
-      <footer className="bg-gray-100 border-t mt-10 w-full">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-gray-600">
+      <footer className="bg-gray-100 border-t w-full">
+        <div className="px-4 py-6 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} NoteApp. Built with 💻 MERN + Redux-Saga.
         </div>
       </footer>
