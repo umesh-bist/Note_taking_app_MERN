@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API=axios.create({
-    baseURL:"http://localhost:3000/api/auth/notes"
+    baseURL:"https://note-taking-app-mern-axi4.onrender.com/api/auth/notes"
 })
 
 API.interceptors.request.use((config) => {
