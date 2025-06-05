@@ -6,8 +6,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-r from-sky-100 to-blue-200">
-      
-      {/* Header */}
       <header className="bg-indigo-600 text-white sticky top-0 z-50 shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">
@@ -37,7 +35,6 @@ const Home = () => {
         )}
       </header>
 
-      {
       <main className="flex-grow flex justify-center items-center px-4">
         <div className="bg-white shadow-lg rounded-2xl p-8 max-w-md w-full text-center mt-10 mb-10">
           <h1 className="text-3xl font-bold text-blue-600 mb-4">📒 Note Taking App</h1>
@@ -63,13 +60,11 @@ const Home = () => {
         </div>
       </main>
 
-      {
       <footer className="bg-gray-100 border-t mt-10 w-full">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} NoteApp. Built with 💻 MERN + Redux-Saga.
         </div>
       </footer>
-
     </div>
   );
 };
