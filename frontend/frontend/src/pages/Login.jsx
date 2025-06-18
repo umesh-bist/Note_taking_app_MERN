@@ -1,70 +1,113 @@
+import { toast } from "react-toastify";
 import axios from "axios";
 import { useState } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-
+import { loginSchema } from "../validation/authValidation";
+import { Formik, ErrorMessage, Field, Form } from "formik";
+import { Eye, EyeOff } from "lucide-react";
 const Login = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  const handleSubmit = async (values, { resetForm, setSubmitting }) => {
     try {
-      const res = await axios.post("http://localhost:3000/api/auth/login", form);
+      const res = await axios.post(
+        "http://localhost:3000/api/auth/login",
+        values
+      );
       localStorage.setItem("token", res.data.token);
-      alert("Login successful");
+
+      localStorage.setItem("username", res.data.name);
+
+      resetForm();
+      toast.success(`Logged in successfully`);
       navigate("/notes");
     } catch (err) {
-      navigate('/signup');
-      alert("Login failed: " + (err.response?.data?.message || err.message));
+      toast.error("Login failed. Please check your credentials.");
+      console.error("Error occurred", err);
+    } finally {
+      setSubmitting(false);
     }
-    setForm({ email: "", password: "" });
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-6">
-        <h1 className="text-3xl font-bold text-center text-indigo-600">Welcome Back</h1>
-        <p className="text-center text-gray-500">Please log in to your account</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Enter your password"
-               autoComplete="current-password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold transition duration-300"
-          >
-            Login
-          </button>
-        </form>
-        <p className="text-center text-sm text-gray-500">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-lg p-8 space-y-6">
+        <h1 className="text-3xl font-bold text-center text-gray-800">
+          Welcome Back
+        </h1>
+        <p className="text-center text-gray-500">
+          Please log in to your account
+        </p>
+        <Formik
+          initialValues={{ email: "", password: "" }}
+          onSubmit={handleSubmit}
+          validationSchema={loginSchema}
+          validateOnChange={true}
+        >
+          {({ isSubmitting }) => (
+            <Form className="space-y-5">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Email
+                </label>
+                <Field
+                  type="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+                />
+
+                <ErrorMessage
+                  name="email"
+                  component="div"
+                  className="text-red-500 text-xs mt-1"
+                />
+              </div>
+              <div className="relative">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                ></label>
+                <Field
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="********"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 pr-10"
+                />
+                <div
+                  className="absolute inset-y-0 right-2 flex items-center cursor-pointer text-gray-500"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </div>
+                <ErrorMessage
+                  name="password"
+                  component="div"
+                  className="text-red-500 text-xs mt-1"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-gray-700 hover:bg-gray-800 text-white py-2 rounded-lg font-semibold transition duration-300"
+              >
+                Login
+              </button>
+            </Form>
+          )}
+        </Formik>
+
+        <p className="text-center text-sm text-gray-600">
           Don't have an account?{" "}
-          <span className="text-indigo-600 font-medium cursor-pointer" onClick={() => navigate('/signup')}>
+          <span
+            className="text-gray-700 font-medium cursor-pointer hover:underline"
+            onClick={() => navigate("/signup")}
+          >
             Sign up
           </span>
         </p>

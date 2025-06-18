@@ -24,13 +24,11 @@ const noteSlice = createSlice({
       state.loading = false;
     },
     addNoteRequest: (state) => {
-      // console.log(action.payload);
-      state.loading=true
+      state.loading = true;
     },
 
     addNoteSuccess: (state, action) => {
       state.note.push(action.payload);
-      // console.log(state.note);
       state.loading = false;
     },
     addNoteFailure: (state, action) => {
@@ -42,7 +40,7 @@ const noteSlice = createSlice({
     },
     deleteNoteSuccess: (state, action) => {
       const idToDelete = action.payload;
-      // console.log("id", action.payload);
+
       state.note = state.note.filter((note) => note._id !== idToDelete);
     },
     deleteNoteFailure: (state, action) => {
@@ -52,18 +50,10 @@ const noteSlice = createSlice({
       state.loading = true;
     },
     editNoteSuccess: (state, action) => {
-     
-      // debugger;
       const updatedNote = action.payload;
-     state.note=state.note.map(note=>note._id===updatedNote._id ?updatedNote :note)
-
-      //here the state.note gives entire notes
-      // console.log("is there any thing in note",JSON.parse(JSON.stringify(state.note)) )
-
-  
-  
-      
-      
+      state.note = state.note.map((note) =>
+        note._id === updatedNote._id ? updatedNote : note
+      );
       state.loading = false;
     },
     editNoteFailure: (state, action) => {
