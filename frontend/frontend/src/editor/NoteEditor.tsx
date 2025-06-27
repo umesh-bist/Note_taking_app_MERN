@@ -1,96 +1,183 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Editor } from "@tinymce/tinymce-react";
-import { User } from "lucide-react";
+import { User, Save, Ellipsis } from "lucide-react";
 import { editorInitConfig } from "../common/editorInitConfig";
-import { noteSchema } from "../validation/authValidation";
+import { INote } from "../types/note";
+import { NewNote } from "../types/newNote";
+import { toast } from "react-toastify";
 
-const NoteEditor = ({ note, onSave, rightHeaderContent }) => {
-  const editorRef = useRef(null);
-  const debounceRef = useRef(null);
+import {
+  initUndoRedo,
+  pushSnapshot,
+} from "../common/customUndoRedo";
 
-  const [validationErrors, setValidationErrors] = useState([]);
+interface NoteEditorProps {
+  note: INote | NewNote;
+  onSave: (note: INote | NewNote) => void;
+  rightHeaderContent?: React.ReactNode;
+}
 
-  const [title, setTitle] = useState(note.title || "");
-  const [content, setContent] = useState(note.content || "");
+const NoteEditor: React.FC<NoteEditorProps> = ({
+  note,
+  onSave,
+  rightHeaderContent,
+}) => {
+  const editorRef = useRef<any>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastContentRef = useRef<string>("");
+  const lastNoteIdRef = useRef<string | any>(null);
+
+  const [title, setTitle] = useState<string>(note.title || "");
+  const [content, setContent] = useState<string>(note.content || "");
+  const [showSavedIcon, setShowSavedIcon] = useState<boolean>(false);
+  const [hasTyped, setHasTyped] = useState(false);
+
+  const noteId = "_id" in note ? (note._id as string) : "new";
 
   useEffect(() => {
+    const previousNoteId = lastNoteIdRef.current;
+    const currentNoteId = noteId;
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+
     setTitle(note.title || "");
     setContent(note.content || "");
-  }, [note]);
+    setHasTyped(false);
+
+    if (previousNoteId !== currentNoteId) {
+      const initialContent = note.content || "";
+
+      if (editorRef.current) {
+        editorRef.current.setContent(initialContent);
+      }
+
+      initUndoRedo(currentNoteId, initialContent);
+      lastContentRef.current = initialContent;
+      lastNoteIdRef.current = currentNoteId;
+    } else {
+      lastContentRef.current = note.content || "";
+    }
+  }, [note, noteId]);
+
+  const normalizeContent = (html: string): string => {
+    return html
+      .replace(/\s*data-mce-[^=]+="[^"]*"/g, "")
+      .replace(/\s*style="[^"]*"/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const extractFirstImageUrl = (html: string): string => {
+    const match = html.match(/<img[^>]+src="([^">]+)"/);
+    return match ? match[1] : "";
+  };
 
   const triggerDebouncedSave = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    debounceRef.current = setTimeout(async () => {
+    debounceRef.current = setTimeout(() => {
       const currentContent = editorRef.current?.getContent() || content;
 
       const formData = {
         title: title.trim(),
-        content: content.trim(),
+        content: currentContent.trim(),
       };
-      try {
-        await noteSchema.validate(formData, { abortEarly: false });
-        setValidationErrors([]);
-        const hasChanges =
-          title !== note.title || currentContent !== note.content;
 
-        if (hasChanges && (formData.title || formData.content)) {
-          onSave({
-            ...note,
-            title: title.trim(),
-            content: currentContent.trim(),
-          });
+      const normalizedCurrent = normalizeContent(formData.content);
+      const normalizedOriginal = normalizeContent(note.content || "");
+
+      const hasChanges =
+        formData.title !== (note.title || "").trim() ||
+        normalizedCurrent !== normalizedOriginal;
+
+      const isEffectivelyEmpty =
+        formData.title === "" && formData.content === "";
+
+      if (hasTyped && hasChanges) {
+        if (isEffectivelyEmpty) {
+          return;
         }
-      } catch (validationError) {
-        if (validationError.inner) {
-          const fieldErrors = {};
-          validationError.inner.forEach((err) => {
-            if (!fieldErrors[err.path]) {
-              fieldErrors[err.path] = err.message;
-            }
-          });
-          setValidationErrors(fieldErrors);
-        } else {
-          setValidationErrors({
-            [validationError.path]: validationError.message,
-          });
+
+        try {
+          const imageUrl = extractFirstImageUrl(formData.content);
+
+          const payload: any = {
+            ...note,
+            title: formData.title,
+            content: formData.content,
+            imageUrl,
+          };
+
+          onSave(payload);
+          setShowSavedIcon(true);
+          setTimeout(() => setShowSavedIcon(false), 1000);
+        } catch (error) {
+          toast.error("Save failed...");
         }
       }
-    }, 2000);
-  }, [title, content, note, onSave]);
+    }, 500);
+  }, [title, content, note, onSave, hasTyped]);
 
   useEffect(() => {
-    triggerDebouncedSave();
+    if (hasTyped) {
+      triggerDebouncedSave();
+    }
+
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [title, content, triggerDebouncedSave]);
 
+  const handleEditorChange = (newContent: string, editor: any) => {
+    setContent(newContent);
+    setHasTyped(true);
+
+    const normalizeForComparison = (html: string) => {
+      return html
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    };
+
+    const normalizedNew = normalizeForComparison(newContent);
+    const normalizedLast = normalizeForComparison(lastContentRef.current);
+
+    if (normalizedNew !== normalizedLast && lastNoteIdRef.current === noteId) {
+      pushSnapshot(noteId, newContent);
+      lastContentRef.current = newContent;
+    }
+  };
+
+  const handleEditorInit = (evt: any, editor: any) => {
+    editorRef.current = editor;
+
+    const initialContent = note.content || "";
+    editor.setContent(initialContent);
+    lastContentRef.current = initialContent;
+  };
+
   const username = localStorage.getItem("username");
-  // console.log(username);
 
   return (
     <div className="h-full flex flex-col bg-white">
       <div className="flex-none bg-gray-50">
-        <div className="flex items-center justify-between p-3 pt-0 bg-white  ">
+        <div className="flex items-center justify-between p-3 pt-0 bg-white">
           <input
             type="text"
-            className="w-full px-3 py-2 text-lg font-semibold text-gray-600 bg-white rounded-lg focus:outline-none focus:ring-0 focus:border-transparent"
+            className="w-full px-3 py-2 text-lg font-semibold text-gray-600 bg-white rounded-lg focus:outline-none"
             placeholder="Note title..."
             value={title}
-            required
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setHasTyped(true);
+            }}
           />
           {rightHeaderContent}
         </div>
-        <div>
-         {validationErrors.title && (
-              <div className="text-red-500 text-xs font-medium  mr-2">
-                {validationErrors.title}
-              </div>
-            )}
-        </div>
+
         <div className="p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-4 h-4 text-gray-600" />
@@ -118,18 +205,22 @@ const NoteEditor = ({ note, onSave, rightHeaderContent }) => {
         </div>
       </div>
 
-      <div
-        className="flex-1 focus:outline-hidden min-h-0"
-        style={{ border: "none", outline: "none", boxShadow: "none" }}
-      >
+      <div className="flex-1 min-h-0 relative">
+        {showSavedIcon && (
+          <div className="absolute top-3 right-3 z-10 mt-9 flex items-center">
+            <Save className="text-green-400 w-5 h-5 sm:w-6 sm:h-6" />
+            <Ellipsis className="text-green-400 ml-2 w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+        )}
+
         <Editor
-          apiKey="4nhptk2xhl1p489gm6crgaih2rchy8xrgzrtqct3wf0r22bi"
-          onInit={(evt, editor) => (editorRef.current = editor)}
+          apiKey="6x5yad1sgfmwzkllx1g7m5seiq3g6e637r2wkofvjrvsysvk"
+          key={noteId}
+          onInit={handleEditorInit}
           value={content}
-          onEditorChange={(newContent) => setContent(newContent)}
-          init={editorInitConfig}
+          onEditorChange={handleEditorChange}
+          init={editorInitConfig(noteId)}
         />
-       
       </div>
     </div>
   );
